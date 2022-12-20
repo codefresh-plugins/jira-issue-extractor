@@ -83,8 +83,8 @@ async function execute() {
                 console.log(chalk.green(`Codefresh assign issue ${normalizedIssue} to your image ${configuration.image}`));
             }
 
-            const needReportToGitops = await codefreshApi.needReportToGitops();
-            if (needReportToGitops) {
+            const shouldReportToGitops = await codefreshApi.shouldReportToGitops();
+            if (shouldReportToGitops) {
                 const avatarUrls = _.get(issueInfo, 'fields.assignee.avatarUrls', {});
                 const result = await codefreshApi
                     .createIssueAnnotation(configuration.image, {

@@ -65,7 +65,7 @@ class CodefreshAPI {
         }
     }
 
-    async needReportToGitops() {
+    async shouldReportToGitops() {
         const user = await this.getUserInfo();
         const accountName = _.get(user, 'activeAccountName');
         const accounts = _.get(user, 'account', []);
