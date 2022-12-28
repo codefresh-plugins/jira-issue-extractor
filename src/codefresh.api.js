@@ -66,11 +66,16 @@ class CodefreshAPI {
     }
 
     async shouldReportToGitops() {
-        const user = await this.getUserInfo();
-        const accountName = _.get(user, 'activeAccountName');
-        const accounts = _.get(user, 'account', []);
-        const activeAccount = _.find(accounts, (account) => account.name === accountName);
-        return _.get(activeAccount, 'features.gitopsImageReporting', false);
+        try {
+            const user = await this.getUserInfo();
+            const accountName = _.get(user, 'activeAccountName');
+            const accounts = _.get(user, 'account', []);
+            const activeAccount = _.find(accounts, (account) => account.name === accountName);
+            return _.get(activeAccount, 'features.gitopsImageReporting', false);
+        } catch (e) {
+            console.log('Unable to check Git Ops image reporting');
+            return false;
+        }
     }
 
     async createIssueAnnotation(imageName, issue) {
