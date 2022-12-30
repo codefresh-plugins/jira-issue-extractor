@@ -83,6 +83,26 @@ async function execute() {
                 console.log(chalk.green(`Codefresh assign issue ${normalizedIssue} to your image ${configuration.image}`));
             }
 
+            const shouldReportToGitops = await codefreshApi.shouldReportToGitops();
+            if (shouldReportToGitops) {
+                const avatarUrls = _.get(issueInfo, 'fields.assignee.avatarUrls', {});
+                const result = await codefreshApi
+                    .createIssueAnnotation(configuration.image, {
+                        number: normalizedIssue,
+                        url: url,
+                        title: _.get(issueInfo, 'fields.summary'),
+                        assignee: _.get(issueInfo, 'fields.assignee.displayName'),
+                        status: _.get(issueInfo, 'fields.status.name'),
+                        avatarURL: Object.values(avatarUrls)[0]
+                    })
+                if (!result) {
+                    console.log(chalk.red(`The image you are trying to enrich ${configuration.image} does not exist`));
+                    process.exit(1);
+                } else {
+                    console.log(chalk.green(`Codefresh assign issue ${normalizedIssue} to your image ${configuration.image}`));
+                }
+            }
+
 
         } catch (e) {
             if(!e.statusCode && JSON.parse(e).statusCode === 404) {
