@@ -1,11 +1,12 @@
-const Promise = require('bluebird');
-const _ = require('lodash');
 const chalk = require('chalk');
-const { exec } = require("child_process");
+const { imageEnricherJiraInfo } = require('@codefresh-io/cf-docker-images');
+const { exec } = require('child_process');
 
-const jiraService = require('./jira.service');
-const codefreshApi = require('./codefresh.api');
 const configuration = require('./configuration');
+
+const PLATFORM = {
+    CLASSIC: 'CLASSIC'
+};
 
 // Export link
 async function _saveLink(url) {
@@ -30,98 +31,32 @@ async function _saveLink(url) {
 }
 
 async function execute() {
-
     console.log(`Looking for Issues from message ${configuration.message}`);
 
-    try {
-        await jiraService.init()
-    } catch(e) {
-        console.log(chalk.red(`Cant initialize jira client, reason ${e.message}`));
-        process.exit(1);
-    }
-
-
-    const issues = jiraService.extract();
-
-    if(!_.isArray(issues)) {
-        console.log(chalk.yellow(`Issues werent found`));
-        if (configuration.failOnNotFound === "true") {
-            return process.exit(1);
-        }
-        return;
-    }
-
-    _.compact(await Promise.all(issues.map(async issue => {
-        let normalizedIssue;
-        try {
-            normalizedIssue = issue.toUpperCase();
-            // just for validation atm
-            const issueInfo = await jiraService
-                .getInfoAboutIssue(normalizedIssue)
-                .catch(() => {
-                    throw Error(`Can't find jira ticket with number "${normalizedIssue}"`);
-                });
-
-            const baseUrl = issueInfo.baseUrl || `https://${configuration.jira.host}`;
-            const url = `${baseUrl}/browse/${normalizedIssue}`;
-            await _saveLink(url);
-
-            const result = await codefreshApi
-                .createIssue({
-                    number: normalizedIssue,
-                    url: url,
-                    title: _.get(issueInfo, 'fields.summary')
-                })
-                .catch(err => {
-                    throw Error(`Can't create issue. ${err}`);
-                });
-
-            if (!result) {
-                console.log(chalk.red(`The image you are trying to enrich ${configuration.image} does not exist`));
-                process.exit(1);
-            } else {
-                console.log(chalk.green(`Codefresh assign issue ${normalizedIssue} to your image ${configuration.image}`));
+    await imageEnricherJiraInfo({
+        platform: PLATFORM.CLASSIC,
+        cfHost: configuration.host,
+        cfApiKey: configuration.apiToken,
+        imageName: configuration.image,
+        projectName: configuration.projectName,
+        message: configuration.message,
+        jira: {
+            host: configuration.jira.host,
+            authentication: {
+                basic: {
+                    email: configuration.jira.basic_auth.email,
+                    apiToken: configuration.jira.basic_auth.api_token,
+                },
+                personalAccessToken: configuration.jira.personalAccessToken,
+                context: configuration.jira.context,
             }
-
-            const shouldReportToGitops = await codefreshApi.shouldReportToGitops();
-            if (shouldReportToGitops) {
-                const avatarUrls = _.get(issueInfo, 'fields.assignee.avatarUrls', {});
-                const result = await codefreshApi
-                    .createIssueAnnotation(configuration.image, {
-                        number: normalizedIssue,
-                        url: url,
-                        title: _.get(issueInfo, 'fields.summary'),
-                        assignee: _.get(issueInfo, 'fields.assignee.displayName'),
-                        status: _.get(issueInfo, 'fields.status.name'),
-                        avatarURL: Object.values(avatarUrls)[0]
-                    })
-                if (!result) {
-                    console.log(chalk.red(`The image you are trying to enrich ${configuration.image} does not exist`));
-                    process.exit(1);
-                } else {
-                    console.log(chalk.green(`Codefresh assign issue ${normalizedIssue} to your image ${configuration.image}`));
-                }
-            }
-
-
-        } catch (e) {
-            if(!e.statusCode && JSON.parse(e).statusCode === 404) {
-                console.log(chalk.yellow(`Skip issue ${normalizedIssue}, didnt find in jira system or you dont have permissions for find it`));
-            } else {
-                try {
-                    const error = JSON.parse(e);
-                    if(error.statusCode === 401) {
-                        console.log(chalk.red('Wrong username or password'));
-                        return process.exit(1);
-                    }
-                    console.log(chalk.red(error.body));
-                } catch(err) {
-                    console.log(chalk.red(e.message));
-                }
-                process.exit(1);
-            }
-
-        }
-    })));
+        },
+        failOnNotFound: configuration.failOnNotFound,
+    }, _saveLink);
 }
-execute();
+
+execute()
+  .catch(e => {
+      console.log(chalk.red(e.message));
+      process.exit(1);
+  });

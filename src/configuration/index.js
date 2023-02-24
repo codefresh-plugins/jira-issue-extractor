@@ -9,6 +9,7 @@ module.exports = {
             email: process.env.JIRA_EMAIL,
             api_token: process.env.JIRA_API_TOKEN
         },
+        personalAccessToken: process.env.JIRA_PAT,
         context: process.env.JIRA_CONTEXT,
     },
     image: process.env.IMAGE,
