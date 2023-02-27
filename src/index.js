@@ -1,3 +1,4 @@
+const _ = require('lodash');
 const chalk = require('chalk');
 const { imageEnricherJiraInfo } = require('@codefresh-io/cf-docker-images');
 const { exec } = require('child_process');
@@ -33,6 +34,9 @@ async function _saveLink(url) {
 async function execute() {
     console.log(`Looking for Issues from message ${configuration.message}`);
 
+    const email = _.get(configuration, 'jira.basic_auth.email');
+    const apiToken = _.get(configuration, 'jira.basic_auth.api_token');
+
     await imageEnricherJiraInfo({
         platform: PLATFORM.CLASSIC,
         cfHost: configuration.host,
@@ -43,13 +47,10 @@ async function execute() {
         jira: {
             host: configuration.jira.host,
             authentication: {
-                basic: {
-                    email: configuration.jira.basic_auth.email,
-                    apiToken: configuration.jira.basic_auth.api_token,
-                },
+                ...(email && apiToken && { basic: { email, apiToken } }),
                 personalAccessToken: configuration.jira.personalAccessToken,
-                context: configuration.jira.context,
-            }
+            },
+            context: configuration.jira.context,
         },
         failOnNotFound: configuration.failOnNotFound,
     }, _saveLink);
