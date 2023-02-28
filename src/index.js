@@ -1,6 +1,6 @@
 const _ = require('lodash');
 const chalk = require('chalk');
-const { imageEnricherJiraInfo } = require('@codefresh-io/cf-docker-images');
+const { imageEnricherJiraInfo } = require('@codefresh-io/cf-report-image-toolbox');
 const { exec } = require('child_process');
 
 const configuration = require('./configuration');
