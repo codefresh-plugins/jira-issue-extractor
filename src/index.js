@@ -39,7 +39,7 @@ async function execute() {
 
     let jiraHost = _.get(configuration, 'jira.host');
     if (!jiraHost.match(/^https?:\/\//)) {  
-        jiraHost = `https://${host}`;
+        jiraHost = `https://${jiraHost}`;
     }
 
     await imageEnricherJiraInfo({
