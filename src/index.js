@@ -37,6 +37,11 @@ async function execute() {
     const email = _.get(configuration, 'jira.basic_auth.email');
     const apiToken = _.get(configuration, 'jira.basic_auth.api_token');
 
+    let jiraHost = _.get(configuration, 'jira.host');
+    if (!host.match(/^https?:\/\//)) {  
+        jiraHost = `https://${host}`;
+    }
+
     await imageEnricherJiraInfo({
         platform: PLATFORM.CLASSIC,
         cfHost: configuration.host,
@@ -45,7 +50,7 @@ async function execute() {
         projectName: configuration.projectName,
         message: configuration.message,
         jira: {
-            host: configuration.jira.host,
+            host: jiraHost,
             authentication: {
                 ...(email && apiToken && { basic: { email, apiToken } }),
                 personalAccessToken: configuration.jira.personalAccessToken,
