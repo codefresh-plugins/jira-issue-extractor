@@ -38,7 +38,7 @@ async function execute() {
     const apiToken = _.get(configuration, 'jira.basic_auth.api_token');
 
     let jiraHost = _.get(configuration, 'jira.host');
-    if (!host.match(/^https?:\/\//)) {  
+    if (!jiraHost.match(/^https?:\/\//)) {  
         jiraHost = `https://${host}`;
     }
 
